@@ -32,35 +32,36 @@ if secilen_sehir != "Tümü":
 else:
     df_filtered = df
 
-# Üst Kısım: Plotly ile Profesyonel ve Türkçe Uyumlu Harita
+# Üst Kısım: Plotly Geo Haritası (Token istemez, hatasız ve hızlı çalışır)
 st.subheader(f"Harita Görünümü — {secilen_sehir}")
 
-# Plotly Scattermapbox (Türkçe etiketler, KKTC ve Türkiye uyumlu altlık)
-fig = px.scatter_mapbox(
+fig = px.scatter_geo(
     df_filtered,
     lat="enlem",
     lon="boylam",
     color="sehir",
     hover_name="bayi_adi",
     hover_data=["yetkili", "telefon", "adres", "detay"],
-    zoom=6 if secilen_sehir != "Tümü" else 5,
-    center={"lat": 39.1667, "lon": 35.2433} if secilen_sehir == "Tümü" else None,
-    height=600
+    projection="natural earth",
+    height=550
 )
 
-# Harita stilini ayarla (OpenStreetMap tabanlı, Türkçe ve doğru coğrafi sınırlar)
+# Harita görünümünü Türkiye bölgesine odakla
+fig.update_geos(
+    visible=True,
+    resolution=50,
+    scope="europe",
+    showcountries=True, countrycolor="gray",
+    showsubunits=True, subunitcolor="lightgray",
+    center={"lat": 39.1667, "lon": 35.2433},
+    lonaxis_range=[25, 45],
+    lataxis_range=[35, 43]
+)
+
 fig.update_layout(
-    mapbox_style="open-street-map",
     margin={"r":0,"t":0,"l":0,"b":0},
     legend_title_text="Şehirler"
 )
-
-# Eğer tek şehir seçildiyse haritayı o şehre odakla
-if secilen_sehir != "Tümü" and not df_filtered.empty:
-    fig.update_layout(
-        mapbox_center={"lat": df_filtered['enlem'].mean(), "lon": df_filtered['boylam'].mean()},
-        mapbox_zoom=7
-    )
 
 st.plotly_chart(fig, use_container_width=True)
 
