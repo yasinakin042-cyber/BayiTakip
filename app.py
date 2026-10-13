@@ -1,10 +1,11 @@
 import streamlit as st
 import pandas as pd
 import pydeck as pdk
+import requests
 
-st.set_page_config(page_title="Kahveci Otomotiv Bayi Takip", layout="wide")
+st.set_page_config(page_title="Kahveci Otomotiv - Bayi Takip ve Harita Sistemi", layout="wide")
 
-st.title("Kahveci Otomotiv - Bayi Takip ve Harita Sistemi")
+st.title("Kahveci Otomotiv - İl Bazlı Bayi ve Ziyaret Takip Haritası")
 
 # Veriyi oku
 @st.cache_data
@@ -21,11 +22,34 @@ except Exception as e:
     st.error(f"Veri yüklenirken hata oluştu: {e}")
     st.stop()
 
-# Kenar çubuğu (Sidebar) - Şehir seçimi ve detay paneli
-st.sidebar.header("Şehir ve Ziyaret Filtresi")
-secilen_sehir = st.sidebar.selectbox("Şehir Seçin", ["Tümü"] + sorted(df['sehir'].dropna().unique().tolist()))
+# Türkiye il sınırları GeoJSON verisini çek (Açık kaynak harita verisi)
+@st.cache_data
+def load_geojson():
+    url = "https://raw.githubusercontent.com/cihadturhan/tr-geojson/master/geojson/tr-cities.json"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    return None
 
-# Filtreleme
+geojson_data = load_geojson()
+
+# Ziyaret edilen şehirleri belirle
+ziyaret_edilen_sehirler = df['sehir'].dropna().unique().tolist()
+
+# GeoJSON poligonlarını renklendirmek için veri hazırlığı
+if geojson_data:
+    for feature in geojson_data['features']:
+        il_adi = feature['properties'].get('name') or feature['properties'].get('il')
+        # Eğer gidildiyse renk ver, gidilmediyse beyaz/saydam yap
+        if il_adi in ziyaret_edilen_sehirler:
+            feature['properties']['fill_color'] = [255, 140, 0, 160] # Gidilen yerler turuncu/renkli
+        else:
+            feature['properties']['fill_color'] = [255, 255, 255, 230] # Gitmediğin yerler tamamen beyaz
+
+# Kenar çubuğu (Sidebar)
+st.sidebar.header("Filtreleme")
+secilen_sehir = st.sidebar.selectbox("Şehir Seçin", ["Tümü"] + sorted(ziyaret_edilen_sehirler))
+
 if secilen_sehir != "Tümü":
     df_filtered = df[df['sehir'] == secilen_sehir]
     center_lat = df_filtered['enlem'].mean()
@@ -37,19 +61,34 @@ else:
     center_lon = 35.0
     zoom_level = 5
 
-# Üst Kısım: Türkiye Haritası (Açık tonlar / Beyaz tema uyumlu)
-st.subheader(f"Harita Görünümü — {secilen_sehir}")
+# Pydeck Harita Katmanları
+layers = []
 
-# Pydeck ile harita katmanı (Beyaz/açık zemin için özelleştirilmiş)
-layer = pdk.Layer(
+# 1. İl Sınırları Poligon Katmanı
+if geojson_data:
+    geojson_layer = pdk.Layer(
+        "GeoJsonLayer",
+        geojson_data,
+        pickable=True,
+        stroked=True,
+        filled=True,
+        get_fill_color="properties.fill_color",
+        get_line_color=[200, 200, 200, 200],
+        line_width_min_pixels=1,
+    )
+    layers.append(geojson_layer)
+
+# 2. Bayi Noktaları Katmanı
+scatterplot_layer = pdk.Layer(
     "ScatterplotLayer",
     data=df_filtered,
     get_position='[boylam, enlem]',
-    get_color="renk == 'red' ? [220, 20, 60, 200] : (renk == 'blue' ? [30, 144, 255, 200] : [255, 140, 0, 200])",
-    get_radius=12000,
+    get_color=[220, 20, 60, 220],
+    get_radius=8000,
     pickable=True,
     auto_highlight=True,
 )
+layers.append(scatterplot_layer)
 
 view_state = pdk.ViewState(
     latitude=center_lat,
@@ -59,24 +98,21 @@ view_state = pdk.ViewState(
 )
 
 r = pdk.Deck(
-    layers=[layer],
+    layers=layers,
     initial_view_state=view_state,
-    map_style="mapbox://styles/mapbox/light-v10", # Açık / Beyaz Türkiye haritası teması
     tooltip={
-        "html": "<b>Şehir:</b> {sehir}<br><b>Firma:</b> {bayi_adi}<br><b>Yetkili:</b> {yetkili}<br><b>Telefon:</b> {telefon}<br><b>Not:</b> {detay}",
+        "html": "<b>İl / Şehir:</b> {name}<br><b>Bayi/Firma:</b> {bayi_adi}<br><b>Yetkili:</b> {yetkili}<br><b>Telefon:</b> {telefon}<br><b>Not:</b> {detay}",
         "style": {"backgroundColor": "#222", "color": "white", "padding": "10px", "borderRadius": "5px"}
     }
 )
 
+st.subheader("Türkiye İl Bazlı Bölge Haritası")
 st.pydeck_chart(r)
 
-# Alt Kısım: Seçilen Şehre Ait Ziyaretler (Tarihe Göre Sıralı)
+# Alt Kısım: Ziyaret Geçmişi Tablosu
 st.markdown("---")
 if secilen_sehir != "Tümü":
-    st.subheader(f"📍 {secilen_sehir} — Ziyaret Geçmişi ve Detaylar")
-    st.info("Bu şehirde gerçekleştirilen tüm bayi ziyaretleri ve görüşme notları aşağıda listelenmiştir.")
-    
-    # Tabloyu göster
+    st.subheader(f"📍 {secilen_sehir} — Ziyaret Geçmişi (Tarihe Göre)")
     st.dataframe(
         df_filtered[['bayi_adi', 'yetkili', 'telefon', 'adres', 'detay']],
         use_container_width=True,
