@@ -1,3 +1,14 @@
 sehir,bayi_adi,yetkili,telefon,adres,detay,renk,enlem,boylam
 Konya,Kahveci Otomotiv Merkez (Ana Bayi),Ahmet Bey,3320000000,Konya Torsan Sanayi,Ana Merkez,red,37.8715,32.4988
-İstanbul,İstanbul Ana Bayi,Mehmet Bey,2120000000,İkitelli OSB,Ana Bayi,blue,41.0082
+İstanbul,İstanbul Ana Bayi,Mehmet Bey,2120000000,İkitelli OSB,Ana Bayi,blue,41.0082,28.9784
+Eskişehir,Göktürk Ticaret,İrfan Aktepe,5069083064,Tornacılar Sanayi Sitesi V Blok No:32 Odunpazarı/Eskişehir,"Önceden Betapar ile çalışıyordu, şimdi AFÇ tercih ediyor. Karter tanıtımı yapıldı.",green,39.7567,30.5006
+Eskişehir,LKN Oto Yedek Parça,Selami Odabaşı,5327093402,Teksan F Blok No:2 B Odunpazarı/Eskişehir,Sampa'dan ziyaret. Karter tanıtımı yapıldı.,green,39.7867,30.5406
+Eskişehir,Ümit Otomotiv,Ümit Zorsu,5323673095,Teksan G 5 Blok No:1 Odunpazarı/Eskişehir,"Doğan ile çalışıyor. Afç bayisine yönlendirildi.",green,39.7667,30.5106
+Aksaray,Pınar Otomotiv,,5322457346,YENİ S.S,"Çalıştığı Bayi: Afç | Karter satışı yapıldı, fuara davet edildi.",orange,38.3687,34.0370
+Aksaray,Aydoğdu Otomotiv,,5322457346,YENİ S.S,"Çalıştığı Bayi: Betapar | Hıdır Usta ile çalışıyor.",orange,38.3587,34.0270
+Mersin,Sonsuz Otomotiv,,5353434747,TIRMIL,"Çalıştığı Bayi: Tmp | Çeşitli ithalcilerle çalışıyor.",orange,36.8121,34.6415
+Mersin,Mancı Kemal,,3242352163,TIRMIL,"Çalıştığı Bayi: Tmp | Orijinal tercih ediyor.",orange,36.8221,34.6515
+Ankara,Net Otomotiv,,5323873202,OSTİM,"Çalıştığı Bayi: Betapar | Çeşitli ithalcilerle çalışıyor.",orange,39.9334,32.8597
+Ankara,TANGRUP,,3120000000,OSTİM,"Çalıştığı Bayi: YOK | Otp Ankara bayisi.",orange,39.9134,32.8397
+Kayseri,Net Ağır Vasıta Yedek Parça,,5362773618,Kayseri Sanayi,"Çalıştığı Bayi: Betapar | Mercedes, Iveco ve Scania ağırlıklı.",orange,38.7312,35.4787
+Gaziantep,VT Otomotiv,,5325056026,Gaziantep Sanayi,"İthalatçı firma, rekabetçi fiyatlar.",orange,37.0662,37.3833
