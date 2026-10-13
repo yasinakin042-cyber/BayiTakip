@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 
 st.set_page_config(page_title="Kahveci Otomotiv - Bayi ve Ziyaret Takip Sistemi", layout="wide")
 
@@ -32,25 +33,42 @@ secilen_sehir = st.sidebar.selectbox("Görüntülenecek Şehri Seçin", sehirler
 # Filtreleme mantığı
 if secilen_sehir != "Tümü":
     df_filtered = df[df['sehir'] == secilen_sehir]
-    zoom_level = 7
 else:
     df_filtered = df
-    zoom_level = 5
 
 # Harita Görünümü Başlığı
 st.subheader(f"Harita Görünümü — {secilen_sehir}")
 
-# Streamlit yerleşik hızlı ve asla hata vermeyen harita altyapısı (lat/lon uyumlu)
-map_df = df_filtered.rename(columns={'enlem': 'lat', 'boylam': 'lon'})
-
-st.map(
-    map_df,
-    latitude='lat',
-    longitude='lon',
-    size=300,
-    zoom=zoom_level,
-    use_container_width=True
+# Bembeyaz arka planlı, harici dosya istemeyen profesyonel Plotly haritası
+fig = px.scatter_geo(
+    df_filtered,
+    lat="enlem",
+    lon="boylam",
+    color="sehir",
+    hover_name="bayi_adi",
+    hover_data=["yetkili", "telefon", "adres", "detay"],
+    projection="mercator",
+    height=550
 )
+
+fig.update_geos(
+    visible=True,
+    resolution=50,
+    showcountries=True, countrycolor="#444444",
+    showsubunits=True, subunitcolor="#dddddd",
+    showland=True, landcolor="white",    # Kara parçaları tamamen beyaz
+    showocean=True, oceancolor="#f8f9fa",  # Denizler sade açık gri
+    lonaxis_range=[25, 45],
+    lataxis_range=[35, 43]
+)
+
+fig.update_layout(
+    template="plotly_white",
+    margin={"r":0,"t":0,"l":0,"b":0},
+    legend_title_text="Şehirler"
+)
+
+st.plotly_chart(fig, use_container_width=True)
 
 # Alt Kısım: Seçilen Şehre Ait Ziyaret Geçmişi ve Detaylar
 st.markdown("---")
@@ -58,7 +76,7 @@ if secilen_sehir != "Tümü":
     st.subheader(f"📋 {secilen_sehir} Şehri Ziyaret ve Müşteri Geçmişi ({len(df_filtered)} Kayıt)")
     st.info("Bu şehirde gerçekleştirilen tüm bayi ziyaretleri ve görüşme notları aşağıda listelenmiştir.")
 else:
-    st.subheader(f"📋 Tüm Türkiye ve Bölge Genelindeki Müşteri ve Bayiler ({len(df)} Kayıt)")
+    st.subheader(f"📋 Tüm Türkiye ve Bölge Genelindeki Müşteri dan Bayiler ({len(df)} Kayıt)")
 
 # Tabloyu eksiksiz göster
 st.dataframe(
