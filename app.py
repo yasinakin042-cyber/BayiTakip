@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import pydeck as pdk
+import plotly.express as px
 
 st.set_page_config(page_title="Kahveci Otomotiv - Bayi Takip Sistemi", layout="wide")
 
@@ -33,46 +33,44 @@ secilen_sehir = st.sidebar.selectbox("Görüntülenecek Şehri Seçin", sehirler
 # Filtreleme mantığı
 if secilen_sehir != "Tümü":
     df_filtered = df[df['sehir'] == secilen_sehir]
-    zoom_val = 7.5
-    lat_center = df_filtered['enlem'].mean()
-    lon_center = df_filtered['boylam'].mean()
 else:
     df_filtered = df
-    zoom_val = 5.8
-    lat_center = 39.1667
-    lon_center = 35.2433
 
 st.subheader(f"Harita Görünümü — {secilen_sehir}")
 
-# Pydeck ile yüksek performanslı, açık tema uyumlu ve net harita
-layer = pdk.Layer(
-    "ScatterplotLayer",
-    data=df_filtered,
-    get_position='[boylam, enlem]',
-    get_color='[255, 140, 0, 200]', # Turuncu renkli belirgin noktalar
-    get_radius=25000,
-    pickable=True,
-    auto_highlight=True,
+# Token gerektirmeyen, hatasız ve bembeyaz arka planlı harita altyapısı
+fig = px.scatter_geo(
+    df_filtered,
+    lat="enlem",
+    lon="boylam",
+    color="sehir",
+    hover_name="bayi_adi",
+    hover_data=["yetkili", "telefon", "adres", "detay"],
+    projection="mercator",
+    size_max=15,
+    height=550
 )
 
-view_state = pdk.ViewState(
-    latitude=lat_center,
-    longitude=lon_center,
-    zoom=zoom_val,
-    pitch=0,
+fig.update_geos(
+    visible=True,
+    resolution=50,
+    scope="europe",
+    showcountries=True, countrycolor="#aaaaaa",
+    showsubunits=True, subunitcolor="#dddddd",
+    showland=True, landcolor="white",      # Harita zemini bembeyaz
+    showocean=True, oceancolor="#f8f9fa",    # Denizler hafif açık gri
+    center={"lat": 39.1667, "lon": 35.2433},
+    lonaxis_range=[26, 45],
+    lataxis_range=[36, 42]
 )
 
-r = pdk.Deck(
-    layers=[layer],
-    initial_view_state=view_state,
-    tooltip={
-        "html": "<b>Şehir:</b> {sehir}<br><b>Firma:</b> {bayi_adi}<br><b>Yetkili:</b> {yetkili}<br><b>Telefon:</b> {telefon}",
-        "style": {"background": "white", "color": "black", "font-family": "Arial", "z-index": "10000"}
-    },
-    map_style="mapbox://styles/mapbox/light-v10" # Bembeyaz, tertemiz açık tema harita altyapısı
+fig.update_layout(
+    template="plotly_white",
+    margin={"r":0,"t":0,"l":0,"b":0},
+    legend_title_text="Şehirler"
 )
 
-st.pydeck_chart(r)
+st.plotly_chart(fig, use_container_width=True)
 
 # Alt Kısım: Seçilen Şehre Ait Ziyaret Geçmişi ve Detaylar
 st.markdown("---")
