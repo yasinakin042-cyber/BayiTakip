@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 
 st.set_page_config(page_title="Kahveci Otomotiv - Bayi Takip ve Harita Sistemi", layout="wide")
 
@@ -20,8 +21,8 @@ except Exception as e:
     st.error(f"Veri yüklenirken hata oluştu: {e}")
     st.stop()
 
-# Sol Menü (Filtreleme)
-st.sidebar.header("📍 Bölge / Şehir Seçimi")
+# Kenar çubuğu (Sidebar) - Şehir seçimi
+st.sidebar.header("📍 Bölge / Şehir Filtresi")
 sehirler = ["Tümü"] + sorted(df['sehir'].dropna().unique().tolist())
 secilen_sehir = st.sidebar.selectbox("Görüntülenecek Şehri Seçin", sehirler)
 
@@ -31,24 +32,47 @@ if secilen_sehir != "Tümü":
 else:
     df_filtered = df
 
-# Üst Kısım: Streamlit Yerleşik İnteraktif Haritası (Beyaz/Açık Tema Uyumlu)
+# Üst Kısım: Plotly ile Profesyonel ve Türkçe Uyumlu Harita
 st.subheader(f"Harita Görünümü — {secilen_sehir}")
 
-# Harita için gerekli sütun isimleri kontrolü (lat/lon)
-map_df = df_filtered.rename(columns={'enlem': 'lat', 'boylam': 'lon'})
+# Plotly Scattermapbox (Türkçe etiketler, KKTC ve Türkiye uyumlu altlık)
+fig = px.scatter_mapbox(
+    df_filtered,
+    lat="enlem",
+    lon="boylam",
+    color="sehir",
+    hover_name="bayi_adi",
+    hover_data=["yetkili", "telefon", "adres", "detay"],
+    zoom=6 if secilen_sehir != "Tümü" else 5,
+    center={"lat": 39.1667, "lon": 35.2433} if secilen_sehir == "Tümü" else None,
+    height=600
+)
 
-# Haritayı göster (Kullanıcı dostu, hızlı ve hatasız yerleşik harita)
-st.map(map_df, latitude='lat', longitude='lon', zoom=6 if secilen_sehir != "Tümü" else 5, use_container_width=True)
+# Harita stilini ayarla (OpenStreetMap tabanlı, Türkçe ve doğru coğrafi sınırlar)
+fig.update_layout(
+    mapbox_style="open-street-map",
+    margin={"r":0,"t":0,"l":0,"b":0},
+    legend_title_text="Şehirler"
+)
+
+# Eğer tek şehir seçildiyse haritayı o şehre odakla
+if secilen_sehir != "Tümü" and not df_filtered.empty:
+    fig.update_layout(
+        mapbox_center={"lat": df_filtered['enlem'].mean(), "lon": df_filtered['boylam'].mean()},
+        mapbox_zoom=7
+    )
+
+st.plotly_chart(fig, use_container_width=True)
 
 # Alt Kısım: Seçilen Şehre Ait Ziyaret Geçmişi ve Detaylar
 st.markdown("---")
 if secilen_sehir != "Tümü":
     st.subheader(f"📋 {secilen_sehir} Şehri Ziyaret ve Müşteri Geçmişi")
-    st.info("Bu şehirde gerçekleştirilen tüm bayi ziyaretleri ve görüşme notları aşağıda listelenmiştir.")
+    st.info("Bu şehirde gerçekleştirilen tüm bayi ziyaretleri ve görüşme notları aşağıda tarihe/sıraya göre listelenmiştir.")
 else:
     st.subheader("📋 Tüm Müşteri ve Bayi Ziyaretleri Listesi")
 
-# Tabloyu göster (Tüm detaylar ve telefonlar dahil)
+# Tabloyu göster
 st.dataframe(
     df_filtered[['sehir', 'bayi_adi', 'yetkili', 'telefon', 'adres', 'detay']],
     use_container_width=True,
