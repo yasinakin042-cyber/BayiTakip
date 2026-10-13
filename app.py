@@ -6,7 +6,6 @@ st.set_page_config(page_title="Kahveci Otomotiv - Bayi Takip Sistemi", layout="w
 
 st.title("Kahveci Otomotiv - Bayi ve Ziyaret Takip Haritası")
 
-# Veriyi oku
 @st.cache_data
 def load_data():
     df = pd.read_csv("musteriler.csv")
@@ -16,29 +15,25 @@ def load_data():
 
 try:
     df = load_data()
-    st.success("Müşteri verileri başarıyla yüklendi!")
 except Exception as e:
-    st.error(f"Veri yüklenirken hata oluştu: {e}")
+    st.error(f"Hata: {e}")
     st.stop()
 
-# Gitmediğin şehirleri sistemden tamamen temizle
+# Gitmediğin şehirleri tamamen siliyoruz
 haric_tutulacak_sehirler = ['Şanlıurfa', 'Trabzon', 'Antalya', 'Denizli', 'Urfa']
 df = df[~df['sehir'].isin(haric_tutulacak_sehirler)]
 
-# Sol Menü / Şehir Filtresi
-st.sidebar.header("📍 Bölge / Şehir Seçimi")
+st.sidebar.header("📍 Şehir Filtresi")
 sehirler = ["Tümü"] + sorted(df['sehir'].dropna().unique().tolist())
-secilen_sehir = st.sidebar.selectbox("Görüntülenecek Şehri Seçin", sehirler)
+secilen_sehir = st.sidebar.selectbox("Şehir Seçin", sehirler)
 
-# Filtreleme mantığı
 if secilen_sehir != "Tümü":
     df_filtered = df[df['sehir'] == secilen_sehir]
 else:
     df_filtered = df
 
-st.subheader(f"Harita Görünümü — {secilen_sehir}")
+st.subheader(f"Harita — {secilen_sehir}")
 
-# Token gerektirmeyen, hatasız ve bembeyaz arka planlı harita altyapısı
 fig = px.scatter_geo(
     df_filtered,
     lat="enlem",
@@ -47,18 +42,17 @@ fig = px.scatter_geo(
     hover_name="bayi_adi",
     hover_data=["yetkili", "telefon", "adres", "detay"],
     projection="mercator",
-    size_max=15,
-    height=550
+    height=500
 )
 
 fig.update_geos(
     visible=True,
     resolution=50,
     scope="europe",
-    showcountries=True, countrycolor="#aaaaaa",
+    showcountries=True, countrycolor="#888888",
     showsubunits=True, subunitcolor="#dddddd",
-    showland=True, landcolor="white",      # Harita zemini bembeyaz
-    showocean=True, oceancolor="#f8f9fa",    # Denizler hafif açık gri
+    showland=True, landcolor="white",
+    showocean=True, oceancolor="#ffffff",
     center={"lat": 39.1667, "lon": 35.2433},
     lonaxis_range=[26, 45],
     lataxis_range=[36, 42]
@@ -66,21 +60,13 @@ fig.update_geos(
 
 fig.update_layout(
     template="plotly_white",
-    margin={"r":0,"t":0,"l":0,"b":0},
-    legend_title_text="Şehirler"
+    margin={"r":0,"t":0,"l":0,"b":0}
 )
 
 st.plotly_chart(fig, use_container_width=True)
 
-# Alt Kısım: Seçilen Şehre Ait Ziyaret Geçmişi ve Detaylar
 st.markdown("---")
-if secilen_sehir != "Tümü":
-    st.subheader(f"📋 {secilen_sehir} Şehri Ziyaret ve Müşteri Geçmişi ({len(df_filtered)} Kayıt)")
-    st.info("Bu şehirde gerçekleştirilen tüm bayi ziyaretleri ve görüşme notları aşağıda listelenmiştir.")
-else:
-    st.subheader(f"📋 Tüm Türkiye ve Bölge Genelindeki Müşteri ve Bayiler ({len(df)} Kayıt)")
-
-# Tabloyu eksiksiz göster
+st.subheader("📋 Müşteri ve Bayi Listesi")
 st.dataframe(
     df_filtered[['sehir', 'bayi_adi', 'yetkili', 'telefon', 'adres', 'detay']],
     use_container_width=True,
